@@ -1,0 +1,37 @@
+name: Create Pull Request
+
+on:
+  push:
+    branches-ignore:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extrair número da issue a partir do nome do branch
+        id: extract_issue
+        run: |
+          BRANCH_NAME="${GITHUB_REF##*/}"
+          ISSUE_NUMBER=$(echo "$BRANCH_NAME" | grep -oE '[0-9]+' | tail -n 1 || true)
+
+          echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Criar ou atualizar PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: master
+          title: "PR automático: ${{ github.ref_name }}"
+          body: |
+            Este PR foi criado automaticamente a partir do branch `${{ github.ref_name }}`
+
+            Closes #${{ steps.extract_issue.outputs.issue_number }}
+          update-existing: true
